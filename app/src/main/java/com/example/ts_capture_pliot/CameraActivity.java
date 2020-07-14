@@ -250,7 +250,7 @@ public class CameraActivity extends AppCompatActivity {
             // 사진 촬영 갯수 제한
             if (willSendImages.size() <= 20) {
                 willSendImages.add(bitmap);
-//                sound.play(MediaActionSound.SHUTTER_CLICK); // 셔터 사운드 출력
+                sound.play(MediaActionSound.SHUTTER_CLICK); // 셔터 사운드 출력
             }else if (willSendImages.size() > 20) {
                 Toast.makeText(CameraActivity.this, "최대 10장까지 촬영할 수 있습니다.", Toast.LENGTH_SHORT).show();
             }
