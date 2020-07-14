@@ -30,7 +30,7 @@ public class WebActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_web);
 
-        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) { // webView Debug 허가
+        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) { // webView Debug 허가 
             webView.setWebContentsDebuggingEnabled(true);
         }
 
