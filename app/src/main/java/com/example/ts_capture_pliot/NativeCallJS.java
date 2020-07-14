@@ -1,6 +1,7 @@
 package com.example.ts_capture_pliot;
 
 import android.graphics.Bitmap;
+import android.graphics.Matrix;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.Base64;
@@ -31,8 +32,28 @@ public class NativeCallJS { /* - Initialization on demand holder idiom 방식의
 
     // 이미지 변환 및 Base64 인코딩
     public String imageProcessor(Bitmap receivedBitmap) {
+        // Rotation
+        if (receivedBitmap.getHeight() < receivedBitmap.getWidth()) { // width가 더 크면 90도 회전
+            Matrix matrix = new Matrix();
+            matrix.postRotate(90);
+            receivedBitmap = Bitmap.createBitmap(receivedBitmap, 0, 0, receivedBitmap.getWidth(), receivedBitmap.getHeight(), matrix, false);
+        }
+
         // Scale
-        receivedBitmap = Bitmap.createScaledBitmap(receivedBitmap, 1080, 1920,false);
+        float widthRatio = (float)1920 / (float)receivedBitmap.getWidth();
+        float heightRatio = (float)1080 / (float)receivedBitmap.getHeight();
+
+        int newSizeWidth, newSizeHeight;
+
+        if (widthRatio > heightRatio) { // 비율이 깨지지 않기 위해 작은 비율로 화면 축소
+            newSizeWidth = (int)(receivedBitmap.getWidth() * heightRatio);
+            newSizeHeight = (int)(receivedBitmap.getHeight() * heightRatio);
+        } else {
+            newSizeWidth = (int)(receivedBitmap.getWidth() * widthRatio);
+            newSizeHeight = (int)(receivedBitmap.getHeight() * widthRatio);
+        }
+
+        receivedBitmap = Bitmap.createScaledBitmap(receivedBitmap, newSizeWidth, newSizeHeight,false);
 
         // Compression
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
