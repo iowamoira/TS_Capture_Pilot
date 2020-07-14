@@ -1,0 +1,2 @@
+include ':app'
+rootProject.name = "TS_Capture_Pliot"

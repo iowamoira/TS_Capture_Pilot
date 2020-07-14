@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">TS_Capture_Pliot</string>
+    <string name="CoreAddress">http://175.126.82.41:8080/webscanner/nhfire/mobile/</string>
+    <string name="CoreAddress2">http://192.168.0.2:7070/webscanner/nhfire/mobile/</string>
+</resources>
