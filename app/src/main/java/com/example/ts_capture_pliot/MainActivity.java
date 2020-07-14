@@ -21,7 +21,7 @@ public class MainActivity extends AppCompatActivity {
         requestPermission();
     }
 
-    // 퍼미션 요청 후 웹뷰 로드
+    //
     private void requestPermission() {
         String[] permissions = {Manifest.permission.INTERNET, Manifest.permission.ACCESS_NETWORK_STATE, Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.CAMERA};
 
