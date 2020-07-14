@@ -87,7 +87,7 @@ public class CameraActivity extends AppCompatActivity {
             public void onClick(View view) { activityDone(); }
         });
 
-        // 찰칵 사운드
+        // 촬영 사운드 출력
         sound = new MediaActionSound();
 
         // 싱글톤 소환
