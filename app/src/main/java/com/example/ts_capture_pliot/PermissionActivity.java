@@ -12,7 +12,7 @@ import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
 
-public class MainActivity extends AppCompatActivity {
+public class PermissionActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -23,9 +23,11 @@ public class MainActivity extends AppCompatActivity {
 
     // 퍼미션 요청 뒤 웹뷰 로드
     private void requestPermission() {
-        String[] permissions = {Manifest.permission.INTERNET, Manifest.permission.ACCESS_NETWORK_STATE, Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.CAMERA};
+        String[] permissions = {Manifest.permission.READ_EXTERNAL_STORAGE,
+                                Manifest.permission.WRITE_EXTERNAL_STORAGE,
+                                Manifest.permission.CAMERA};
 
-        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) { // Android 6 (API LEVEL23) 이상 런타임 권한 지원기기일 경우 묻기
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) { // Android 6 (API LEVEL23) 이상 런타임 권한 지원기기일 경우 묻기
             if (havePermissions(permissions)) moveToWeb(); // 권한 있으면 웹뷰 로드
             else requestPermissions(permissions, 0); // 권한 없으면 권한 요청
         }
@@ -33,8 +35,9 @@ public class MainActivity extends AppCompatActivity {
 
     // 앱 퍼미션 상태 확인
     private boolean havePermissions(String[] permissions) {
-        for(String permission : permissions) {
-            if(ContextCompat.checkSelfPermission(this, permission) == PackageManager.PERMISSION_DENIED) return false;
+        for (String permission : permissions) {
+            if (ContextCompat.checkSelfPermission(this, permission) == PackageManager.PERMISSION_DENIED)
+                return false;
         }
         return true;
     }
@@ -49,7 +52,7 @@ public class MainActivity extends AppCompatActivity {
 
     // 웹뷰 로드
     private void moveToWeb() {
-        startActivity(new Intent(MainActivity.this, WebActivity.class));
+        startActivity(new Intent(PermissionActivity.this, WebActivity.class));
         finish();
     }
 
@@ -62,7 +65,7 @@ public class MainActivity extends AppCompatActivity {
                 .setPositiveButton("확인", new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialogInterface, int i) {
-                        finish();
+                        System.exit(0);
                     }
                 });
         alert.create().show();

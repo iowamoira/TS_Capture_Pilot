@@ -27,7 +27,7 @@
         android:largeHeap="true"
         android:hardwareAccelerated="true"
         >
-        <activity android:name=".MainActivity">
+        <activity android:name=".PermissionActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
