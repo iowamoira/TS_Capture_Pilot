@@ -32,13 +32,6 @@ public class NativeCallJS { /* - Initialization on demand holder idiom 방식의
 
     // 이미지 변환 및 Base64 인코딩
     public String imageProcessor(Bitmap receivedBitmap) {
-        // Rotation
-        if (receivedBitmap.getHeight() < receivedBitmap.getWidth()) { // width가 더 크면 90도 회전
-            Matrix matrix = new Matrix();
-            matrix.postRotate(90);
-            receivedBitmap = Bitmap.createBitmap(receivedBitmap, 0, 0, receivedBitmap.getWidth(), receivedBitmap.getHeight(), matrix, false);
-        }
-
         // Scale
         float widthRatio = (float)1920 / (float)receivedBitmap.getWidth();
         float heightRatio = (float)1080 / (float)receivedBitmap.getHeight();
