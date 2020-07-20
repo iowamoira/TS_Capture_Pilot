@@ -1,7 +1,6 @@
 package com.example.ts_capture_pliot;
 
 import android.graphics.Bitmap;
-import android.graphics.Matrix;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.Base64;
@@ -21,39 +20,26 @@ public class NativeCallJS { /* - Initialization on demand holder idiom 방식의
 
     // WebView, Callback 공유
     private WebView webView;
-    private String callback;
     private String mode;
+    private String maxSize;
+    private String callback;
 
     public void setWebView(WebView webView) { this.webView = webView; }
-    public void setCallback(String callback) { this.callback = callback; }
     public void setMode(String mode) { this.mode = mode; }
+    public void setMaxSize(String maxSize) { this.maxSize = maxSize; }
+    public void setCallback(String callback) { this.callback = callback; }
 
     public String getMode() { return mode; }
+    public String getMaxSize() { return maxSize; }
 
-    // 이미지 변환 및 Base64 인코딩
-    public String imageProcessor(Bitmap receivedBitmap) {
-        // Scale
-        float widthRatio = (float)1920 / (float)receivedBitmap.getWidth();
-        float heightRatio = (float)1080 / (float)receivedBitmap.getHeight();
-
-        int newSizeWidth, newSizeHeight;
-
-        if (widthRatio > heightRatio) { // 비율이 깨지지 않기 위해 작은 비율로 화면 축소
-            newSizeWidth = (int)(receivedBitmap.getWidth() * heightRatio);
-            newSizeHeight = (int)(receivedBitmap.getHeight() * heightRatio);
-        } else {
-            newSizeWidth = (int)(receivedBitmap.getWidth() * widthRatio);
-            newSizeHeight = (int)(receivedBitmap.getHeight() * widthRatio);
-        }
-
-        receivedBitmap = Bitmap.createScaledBitmap(receivedBitmap, newSizeWidth, newSizeHeight,false);
-
+    // 이미지 변환 및 Base64 인코딩 후 Call JS *대용량 파일이기 때문에 효율성 위해 함수 분할 최소화
+    public void doneChildCallMom(Bitmap receivedBitmap, final String isDone) {
         // Compression
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         receivedBitmap.compress(Bitmap.CompressFormat.JPEG, 85, outputStream);
 
         /* Base64 Encoding Flag를 DEFAULT로 두면 76자마다 \n 붙음 주의, NO_WRAP 사용 */
-        String convertedImage = Base64.encodeToString(outputStream.toByteArray(), Base64.NO_WRAP);
+        final String convertedImage = Base64.encodeToString(outputStream.toByteArray(), Base64.NO_WRAP);
 
         try {
             outputStream.close();
@@ -61,18 +47,12 @@ public class NativeCallJS { /* - Initialization on demand holder idiom 방식의
             e.printStackTrace();
         }
 
-        return convertedImage;
-    }
-
-    // Webscanner의 JS를 호출하는 함수
-    public void doneChildCallMom(String receivedimage, String isDone) {
-        final String base64String = callback + "('" + "{\"imgData\":\"data:image/jpeg;base64," + receivedimage + "\",\"isEnd\":\"" + isDone + "\"}" + "')";
-
+        // Webscanner의 JS를 호출하는 함수
         Handler handler = new Handler(Looper.getMainLooper());
         handler.post(new Runnable() {
             @Override
             public void run() {
-                webView.evaluateJavascript(base64String, null);
+                webView.evaluateJavascript(callback + "('" + "{\"imgData\":\"data:image/jpeg;base64," + convertedImage + "\",\"isEnd\":\"" + isDone + "\"}" + "')", null);
             }
         });
     }
