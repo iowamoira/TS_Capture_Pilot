@@ -4,6 +4,7 @@ import android.app.DownloadManager;
 import android.content.ClipData;
 import android.content.Intent;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
@@ -23,8 +24,8 @@ import androidx.appcompat.app.AppCompatActivity;
 import java.util.ArrayList;
 
 public class WebActivity extends AppCompatActivity {
-    WebView webView;
-    NativeCallJS nativeCallJS;
+    private WebView webView;
+    private NativeCallJS nativeCallJS;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -117,41 +118,41 @@ public class WebActivity extends AppCompatActivity {
 
     private void moveToGallery() {
         boolean selector = nativeCallJS.getMode().equals("S") ? false : true; // Single or Multi Select
-        int requestCode = selector ? 1 : 0;
 
         Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
         intent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, selector);
         intent.setType("image/*");
-        startActivityForResult(Intent.createChooser(intent,null), requestCode);
+        startActivityForResult(Intent.createChooser(intent,null), 0);
     }
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        ArrayList<Uri> willSendUris = new ArrayList<>();
+        if(resultCode == RESULT_OK) {
+            ArrayList<Uri> willSendUris = new ArrayList<>();
 
-        if(requestCode == 0) { // 싱글 모드
-            Uri uri = data.getData();
+            if(data.getData() != null) { // 싱글 모드
+                willSendUris.add(data.getData());
+            }else if(data.getClipData() != null) { // 멀티 모드
+                ClipData clipData = data.getClipData();
+                if (clipData.getItemCount() > 50) {
+                    Toast.makeText(WebActivity.this, "최대 50장까지 선택할 수 있습니다.", Toast.LENGTH_SHORT).show();
+                    moveToGallery();
+                    return;
+                }
 
-            if(uri != null) willSendUris.add(uri);
-        }else { // 멀티 모드
-            ClipData clipData = data.getClipData();
-
-            if(clipData != null) {
                 for (int i = 0; i < clipData.getItemCount(); i++) {
                     willSendUris.add(clipData.getItemAt(i).getUri());
                 }
             }
+
+            // Async
+            String isDone;
+            while (willSendUris.size() > 0) {
+                isDone = willSendUris.size() == 1 ? "Y" : "N";
+                GalleryTask galleryTask = new GalleryTask(WebActivity.this, willSendUris.remove(0), isDone);
+                galleryTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+            }
         }
-
-        // Async
-        String isDone;
-        while (willSendUris.size() > 0) {
-            isDone = willSendUris.size() == 1 ? "Y" : "N";
-
-            GalleryTask galleryTask = new GalleryTask(WebActivity.this, willSendUris.remove(0), isDone);
-            galleryTask.execute();
-        }
-
     }
 }
