@@ -340,10 +340,10 @@ public class CameraActivity extends AppCompatActivity {
     // bitmap 이미지를 base64 인코딩 및 완료 시 call JS
     private void takenImage() {
         try {
-            String isDone;
+            nativeCallJS.setAsyncTotalImage(willSendImages.size()); // 마지막 사진 비교를 위한 전체 이미지 갯수 설정
+
             while(willSendImages.size() != 0) {
-                isDone = 1 == willSendImages.size() ? "Y" : "N"; // 마지막 사진인지 확인
-                nativeCallJS.doneChildCallMom(willSendImages.remove(willSendImages.size() - 1), isDone); // 이미지 프로세싱 후 JS 호출
+                nativeCallJS.doneChildCallMom(willSendImages.remove(willSendImages.size() - 1)); // 압축률 조정 및 JS 호출
             }
             finish();
         }catch (Exception e){
@@ -366,3 +366,4 @@ public class CameraActivity extends AppCompatActivity {
         }
     }
 }
+

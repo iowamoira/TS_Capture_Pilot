@@ -146,13 +146,17 @@ public class WebActivity extends AppCompatActivity {
                 }
             }
 
-            // Async
-            String isDone;
-            while (willSendUris.size() > 0) {
-                isDone = willSendUris.size() == 1 ? "Y" : "N";
-                GalleryTask galleryTask = new GalleryTask(WebActivity.this, willSendUris.remove(0), isDone);
-                galleryTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
-            }
+            AsyncProcess(willSendUris);
+        }
+    }
+
+    // Async
+    private void AsyncProcess(ArrayList<Uri> receivedUris) {
+        nativeCallJS.setAsyncTotalImage(receivedUris.size()); // 전체 갯수 알려주기
+
+        while (receivedUris.size() != 0) {
+            GalleryTask galleryTask = new GalleryTask(WebActivity.this, receivedUris.remove(0));
+            galleryTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
         }
     }
 }

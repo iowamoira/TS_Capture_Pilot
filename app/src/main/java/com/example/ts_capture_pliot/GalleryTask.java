@@ -15,13 +15,11 @@ import java.io.IOException;
 public class GalleryTask extends AsyncTask {
     Context mContext;
     Uri uri;
-    String isDone;
     NativeCallJS nativeCallJS;
 
-    public GalleryTask(Context mContext, Uri uri, String isDone) {
+    public GalleryTask(Context mContext, Uri uri) {
         this.mContext = mContext;
         this.uri = uri;
-        this.isDone = isDone;
         nativeCallJS = NativeCallJS.getInstance();
     }
 
@@ -59,7 +57,7 @@ public class GalleryTask extends AsyncTask {
             bitmap = Bitmap.createScaledBitmap(bitmap, newSizeWidth, newSizeHeight,false);
 
             // 압축률 조정 및 JS 호출
-            nativeCallJS.doneChildCallMom(bitmap, isDone);
+            nativeCallJS.doneChildCallMom(bitmap);
         } catch (IOException e) {
             e.printStackTrace();
         }

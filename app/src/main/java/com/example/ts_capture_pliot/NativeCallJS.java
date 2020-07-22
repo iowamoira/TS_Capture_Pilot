@@ -24,11 +24,14 @@ public class NativeCallJS { /* - Initialization on demand holder idiom 방식의
     private int maxWidth;
     private int maxHeight;
     private String callback;
+    private int asyncTotalImage;
+    private int asyncCountImage;
 
     public void setWebView(WebView webView) { this.webView = webView; }
     public void setMode(String mode) { this.mode = mode; }
     public void setMaxSize(String maxSize) { maxSizeCalculator(maxSize); }
     public void setCallback(String callback) { this.callback = callback; }
+    public void setAsyncTotalImage(int asyncTotalImage) { this.asyncTotalImage = asyncTotalImage; }
 
     public String getMode() { return mode; }
     public int getMaxWidth() { return maxWidth; }
@@ -41,7 +44,7 @@ public class NativeCallJS { /* - Initialization on demand holder idiom 방식의
     }
 
     // 이미지 변환 및 Base64 인코딩 후 Call JS *대용량 파일이기 때문에 효율성 위해 함수 분할 최소화
-    public void doneChildCallMom(Bitmap receivedBitmap, final String isDone) {
+    public void doneChildCallMom(Bitmap receivedBitmap) {
         // Compression
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         receivedBitmap.compress(Bitmap.CompressFormat.JPEG, 85, outputStream);
@@ -60,6 +63,16 @@ public class NativeCallJS { /* - Initialization on demand holder idiom 방식의
         handler.post(new Runnable() {
             @Override
             public void run() {
+                asyncCountImage++;
+
+                String isDone;
+                if (asyncTotalImage == asyncCountImage) {
+                    isDone = "Y";
+                    asyncCountImage = 0;
+                }else {
+                    isDone = "N";
+                }
+
                 webView.evaluateJavascript(callback + "('" + "{\"imgData\":\"data:image/jpeg;base64," + convertedImage + "\",\"isEnd\":\"" + isDone + "\"}" + "')", null);
             }
         });
