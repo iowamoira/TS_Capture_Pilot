@@ -26,6 +26,7 @@
         android:usesCleartextTraffic="true"
         android:largeHeap="true"
         android:hardwareAccelerated="true"
+        android:requestLegacyExternalStorage="true"
         >
         <activity android:name=".PermissionActivity">
             <intent-filter>
