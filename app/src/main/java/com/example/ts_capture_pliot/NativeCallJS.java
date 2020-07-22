@@ -21,16 +21,24 @@ public class NativeCallJS { /* - Initialization on demand holder idiom 방식의
     // WebView, Callback 공유
     private WebView webView;
     private String mode;
-    private String maxSize;
+    private int maxWidth;
+    private int maxHeight;
     private String callback;
 
     public void setWebView(WebView webView) { this.webView = webView; }
     public void setMode(String mode) { this.mode = mode; }
-    public void setMaxSize(String maxSize) { this.maxSize = maxSize; }
+    public void setMaxSize(String maxSize) { maxSizeCalculator(maxSize); }
     public void setCallback(String callback) { this.callback = callback; }
 
     public String getMode() { return mode; }
-    public String getMaxSize() { return maxSize; }
+    public int getMaxWidth() { return maxWidth; }
+    public int getMaxHeight() { return maxHeight; }
+
+    // JS로부터 받은 max 사이즈를 통해 16:9 비율 width, height 생성
+    private void maxSizeCalculator(String maxSize) {
+        this.maxWidth = Integer.parseInt(maxSize);
+        this.maxHeight = (int) (Float.parseFloat(maxSize) / 1.77777777778);
+    }
 
     // 이미지 변환 및 Base64 인코딩 후 Call JS *대용량 파일이기 때문에 효율성 위해 함수 분할 최소화
     public void doneChildCallMom(Bitmap receivedBitmap, final String isDone) {

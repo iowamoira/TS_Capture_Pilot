@@ -38,6 +38,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 
 public class CameraActivity extends AppCompatActivity {
+    /* Field 특별한 설명이 없는 것들은 변수명 그대로 이해 */
     private SurfaceView mSurfaceView;
     private SurfaceHolder mSurfaceHolder;
 
@@ -45,20 +46,15 @@ public class CameraActivity extends AppCompatActivity {
     private CameraDevice mCameraDevice;
     private Handler mHandler;
 
-    private CameraCaptureSession mCameraCaptureSession;
-    private CaptureRequest mPreviewRequest; // Preview
-    private CaptureRequest.Builder mPreviewRequestBuilder;
-
-    private CaptureRequest.Builder mCaptureRequestBuilder;
-    private CameraCaptureSession.CaptureCallback mStillCaptureCallback;
+    private CaptureRequest mPreviewRequest; // Preview 설정
+    private CaptureRequest mCaptureRequest; // Camera 설정
+    private CameraCaptureSession mCameraCaptureSession; // 상태에 따라 프리뷰와 카메라 설정을 받을 세션
 
     private MediaActionSound sound;
     private NativeCallJS nativeCallJS;
     private ArrayList<Bitmap> willSendImages;
 
-    private int maxWidth, maxHeight;
-    private Button btn_Capture;
-    private Button btn_Back, btn_Complete;
+    private Button btn_Capture, btn_Back, btn_Complete;
     private ImageView focus;
 
     /* ------------------------------------------------- Initialize Activity ------------------------------------------------- */
@@ -83,23 +79,14 @@ public class CameraActivity extends AppCompatActivity {
 
         focus = findViewById(R.id.focus);
 
-        btn_Back = findViewById(R.id.btn_Back);
         btn_Capture = findViewById(R.id.btn_Capture);
+        btn_Back = findViewById(R.id.btn_Back);
         btn_Complete = findViewById(R.id.btn_Complete);
 
         // Button Action
-        btn_Back.setOnClickListener(new View.OnClickListener() { // 취소
-            @Override
-            public void onClick(View view) { finish(); }
-        });
-        btn_Capture.setOnClickListener(new View.OnClickListener() { // 촬영
-            @Override
-            public void onClick(View v) { takeImage(); }
-        });
-        btn_Complete.setOnClickListener(new View.OnClickListener() { // 완료
-            @Override
-            public void onClick(View view) { takenImage(); }
-        });
+        btn_Capture.setOnClickListener(onClickListener); // 촬영
+        btn_Back.setOnClickListener(onClickListener); // 취소
+        btn_Complete.setOnClickListener(onClickListener); // 완료
 
         // 찰칵 사운드
         sound = new MediaActionSound();
@@ -110,15 +97,31 @@ public class CameraActivity extends AppCompatActivity {
         // 촬영 저장할 변수
         willSendImages = new ArrayList<>();
 
-        if (nativeCallJS.getMode().equals("S")) { focus.setVisibility(View.VISIBLE); }
-
-        maxWidth = Integer.parseInt(nativeCallJS.getMaxSize());
-        maxHeight = (int) ((float) maxWidth / 1.7777777777777);
+        if (nativeCallJS.getMode().equals("S")) { focus.setVisibility(View.VISIBLE); } // 싱글 모드시 포커스 이미지 출력
     }
+
+    View.OnClickListener onClickListener = new View.OnClickListener() {
+        @Override
+        public void onClick(View view) {
+            switch (view.getId()) {
+                case R.id.btn_Capture :
+                    takeImage();
+                    break;
+                case R.id.btn_Back :
+                    finish();
+                    break;
+                case R.id.btn_Complete :
+                    takenImage();
+                    break;
+                default:
+                    break;
+            }
+        }
+    };
 
     // Frame for preview
     public void setSurfaceView() {
-        mSurfaceHolder = mSurfaceView.getHolder(); // surfaceView를 제어
+        mSurfaceHolder = mSurfaceView.getHolder(); // surfaceView 제어
         mSurfaceHolder.addCallback(new SurfaceHolder.Callback() {
             @Override
             public void surfaceCreated(@NonNull SurfaceHolder surfaceHolder) { setCamera(); } // Surface 생성되면 카메라 구성
@@ -152,10 +155,11 @@ public class CameraActivity extends AppCompatActivity {
         try {
             mCameraManager.openCamera(mCameraId, new CameraDevice.StateCallback() {
                 @Override
-                public void onOpened(CameraDevice camera) { // 카메라 구성되면 이미지 리더 및 프리뷰 세팅
+                public void onOpened(CameraDevice camera) { // 카메라 구성되면 이미지 리더 및 프리뷰 캡처 세팅
                     mCameraDevice = camera;
                     setOutputReader();
                     setPreview();
+                    setCapture();
                 }
                 @Override
                 public void onDisconnected(@NonNull CameraDevice camera) { }
@@ -172,40 +176,36 @@ public class CameraActivity extends AppCompatActivity {
         final Handler mainHandler = new Handler(getMainLooper());
 
         try {
-            mImageReader = ImageReader.newInstance(maxWidth, maxHeight, ImageFormat.JPEG, 3);
+            mImageReader = ImageReader.newInstance(nativeCallJS.getMaxWidth(), nativeCallJS.getMaxHeight(), ImageFormat.JPEG, 3);
             mImageReader.setOnImageAvailableListener(new ImageReader.OnImageAvailableListener() {
                 @Override
                 public void onImageAvailable(final ImageReader reader) {
-                    if (willSendImages.size() < 80) {
-                        mainHandler.post(new Runnable() {
-                            @Override
-                            public void run() {
-                                Image image = reader.acquireNextImage(); // Reading image
+                    mainHandler.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            Image image = reader.acquireNextImage(); // Reading image
 
-                                try {
-                                    ByteBuffer buffer = image.getPlanes()[0].getBuffer();
-                                    byte[] bytes = new byte[buffer.remaining()];
-                                    buffer.get(bytes);
-                                    Bitmap bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
+                            try {
+                                ByteBuffer buffer = image.getPlanes()[0].getBuffer();
+                                byte[] bytes = new byte[buffer.remaining()];
+                                buffer.get(bytes);
+                                Bitmap bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
 
-                                    Matrix matrix = new Matrix(); // Rotation
-                                    matrix.postRotate(90);
-                                    bitmap = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), matrix, false);
+                                Matrix matrix = new Matrix(); // Rotation
+                                matrix.postRotate(90);
+                                bitmap = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), matrix, false);
 
-                                    willSendImages.add(bitmap);
-                                    btn_Capture.setText(String.valueOf(willSendImages.size()));
+                                willSendImages.add(bitmap);
+                                btn_Capture.setText(String.valueOf(willSendImages.size()));
 
-                                    if (nativeCallJS.getMode().equals("S")) { takenImage(); }
-                                }catch (Exception e) {
-                                    e.printStackTrace();
-                                }finally {
-                                    image.close();
-                                }
+                                if (nativeCallJS.getMode().equals("S")) { takenImage(); } // 싱글 모드
+                            }catch (Exception e) {
+                                e.printStackTrace();
+                            }finally {
+                                image.close();
                             }
-                        });
-                    }else {
-                        Toast.makeText(CameraActivity.this, "최대 50장까지 촬영할 수 있습니다.", Toast.LENGTH_SHORT).show();
-                    }
+                        }
+                    });
                 }
             }, mainHandler); // main-thread
         } catch (Exception e) {
@@ -213,19 +213,20 @@ public class CameraActivity extends AppCompatActivity {
         }
     }
 
-    // To get preview
+    // To get preview setting
     public void setPreview() {
         try {
-            mPreviewRequestBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW); // 프리뷰 요청
+            final CaptureRequest.Builder mPreviewRequestBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW); // 프리뷰 요청
             mPreviewRequestBuilder.addTarget(mSurfaceHolder.getSurface()); // 요청한 프리뷰를 표시할 타겟
+            mPreviewRequestBuilder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE);
+            mPreviewRequest = mPreviewRequestBuilder.build(); // 카메라 촬영 후 프리뷰 모드로 복귀하기 위해 글로벌 저장
+
             mCameraDevice.createCaptureSession(Arrays.asList(mSurfaceHolder.getSurface(), mImageReader.getSurface()), new CameraCaptureSession.StateCallback() {
                 @Override
                 public void onConfigured(@NonNull CameraCaptureSession session) {
                     mCameraCaptureSession = session;
 
                     try {
-                        mPreviewRequestBuilder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE);
-                        mPreviewRequest = mPreviewRequestBuilder.build(); // 카메라 촬영 포커싱 후 프리뷰 모드로 복귀하기 위해 프리뷰 세팅 글로벌 저장
                         mCameraCaptureSession.setRepeatingRequest(mPreviewRequest, mCaptureCallback, mHandler);
                     } catch(CameraAccessException e) {
                         e.printStackTrace();
@@ -235,6 +236,18 @@ public class CameraActivity extends AppCompatActivity {
                 public void onConfigureFailed(@NonNull CameraCaptureSession session) { }
             }, mHandler);
         } catch (CameraAccessException e) {
+            e.printStackTrace();
+        }
+    }
+
+    // To get capture setting
+    private void setCapture() {
+        try {
+            CaptureRequest.Builder mCaptureRequestBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE); // capture
+            mCaptureRequestBuilder.addTarget(mImageReader.getSurface()); // 요청 결과 이미지 리더로 반환
+            mCaptureRequestBuilder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE);
+            mCaptureRequest = mCaptureRequestBuilder.build();
+        }catch (CameraAccessException e) {
             e.printStackTrace();
         }
     }
@@ -254,42 +267,23 @@ public class CameraActivity extends AppCompatActivity {
     // Shoot
     public void takeImage() { mState = STATE_PICTURE_TAKING; }
 
-    // To capture still image
-    private void captureStillImage() {
+    // Capture still image
+    private void captureState() {
         try {
             if (mCameraDevice == null) { return; }
             sound.play(MediaActionSound.SHUTTER_CLICK); // 찰칵
 
-            preCapture();
-
-            mCameraCaptureSession.capture(mCaptureRequestBuilder.build(), mStillCaptureCallback,null);
+            mCameraCaptureSession.capture(mCaptureRequest, mCaptureCallback, null);
         } catch (CameraAccessException e) {
             e.printStackTrace();
         }
     }
 
-    private void preCapture() { // 촬영 사전 준비
+    // Back to preview state
+    private void previewState() {
         try {
-            if (mCaptureRequestBuilder == null) {
-                mCaptureRequestBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE); // 카메라 촬영은 프리뷰 모드와 별개 구성
-                mCaptureRequestBuilder.addTarget(mImageReader.getSurface()); // 요청 결과 이미지 리더로 반환
-                mCaptureRequestBuilder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE);
-            }
-            if (mStillCaptureCallback == null) {
-                mStillCaptureCallback = new CameraCaptureSession.CaptureCallback() {
-                    @Override
-                    public void onCaptureCompleted(@NonNull CameraCaptureSession session, @NonNull CaptureRequest request, @NonNull TotalCaptureResult result) {
-                        super.onCaptureCompleted(session, request, result);
-                        try {
-                            mState = STATE_PREVIEW; // 프리뷰 상태 전환
-                            mCameraCaptureSession.setRepeatingRequest(mPreviewRequest, mCaptureCallback, mHandler); // 실제 프리뷰 전환
-                        } catch (CameraAccessException e) {
-                            e.printStackTrace();
-                        }
-                    }
-                };
-            }
-        }catch (CameraAccessException e) {
+            mCameraCaptureSession.setRepeatingRequest(mPreviewRequest, mCaptureCallback, mHandler);
+        } catch (CameraAccessException e) {
             e.printStackTrace();
         }
     }
@@ -299,20 +293,25 @@ public class CameraActivity extends AppCompatActivity {
         @Override
         public void onCaptureCompleted(@NonNull CameraCaptureSession session, @NonNull CaptureRequest request, @NonNull TotalCaptureResult result) {
             super.onCaptureCompleted(session, request, result);
-            progress(result);
+            progress();
         }
         @Override
         public void onCaptureProgressed(@NonNull CameraCaptureSession session, @NonNull CaptureRequest request, @NonNull CaptureResult partialResult) {
             super.onCaptureProgressed(session, request, partialResult);
-            progress(partialResult);
+            progress();
         }
-        private void progress(CaptureResult result) {
+        private void progress() {
             colorChanger();
             switch (mState) {
                 case STATE_PREVIEW: { break; } // 프리뷰 상태 캡처 버튼을 누르면 처리후 unlockFocus 통해 복귀
-                case STATE_PICTURE_TAKING: {
+                case STATE_PICTURE_TAKING: { // 촬영 상태 전환
                     mState = STATE_PICTURE_TAKEN;
-                    captureStillImage();
+                    captureState();
+                    break;
+                }
+                case STATE_PICTURE_TAKEN: {
+                    mState = STATE_PREVIEW; // 프리뷰 상태 전환
+                    previewState();
                     break;
                 }
             }
@@ -367,4 +366,3 @@ public class CameraActivity extends AppCompatActivity {
         }
     }
 }
-
